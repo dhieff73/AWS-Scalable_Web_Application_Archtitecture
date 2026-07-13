@@ -188,22 +188,4 @@ If you discover a security issue with this repository, please open an issue or, 
 
 This architecture provisions billable resources, including but not limited to: NAT Gateways (per-AZ), EC2 instances, an Application Load Balancer, RDS Multi-AZ (double the single-instance cost), and CloudFront data transfer. Review the [AWS Pricing Calculator](https://calculator.aws/) before deploying to production, and remember to tear down resources after testing to avoid ongoing charges.
 
-## Learning Outcomes
 
-- Design VPCs with correct subnet, route table, and NAT Gateway configurations
-- Build highly available architectures across multiple Availability Zones
-- Configure ALB listener rules and target group health checks
-- Implement Auto Scaling with target tracking and step scaling policies
-- Secure applications with WAF, Security Groups, and private subnets
-- Use Systems Manager Session Manager as a bastion-free access alternative
-
-## Roadmap
-
-- [ ] Add CI/CD pipeline (CodePipeline/GitHub Actions) for automated deployment
-- [ ] Add blue/green deployment support via CodeDeploy
-- [ ] Add optional ElastiCache layer for session/data caching
-- [ ] Add Terraform module tests
-
-## License
-
-This project is licensed under the terms of the [MIT License](./LICENSE) (or update to match your chosen license).
