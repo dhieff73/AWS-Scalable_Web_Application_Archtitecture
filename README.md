@@ -23,10 +23,6 @@
 - [Configuration Notes](#configuration-notes)
 - [Security](#security)
 - [Cost Considerations](#cost-considerations)
-- [Learning Outcomes](#learning-outcomes)
-- [Roadmap](#roadmap)
-- [License](#license)
-
 ---
 
 ## Solution Overview
