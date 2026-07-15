@@ -2,8 +2,6 @@
 
 **Production-grade, highly available web application architecture on AWS** — built with a multi-AZ VPC, Application Load Balancer, EC2 Auto Scaling, CloudFront, WAF, and Multi-AZ RDS.
 
-[🚧 Feature request](../../issues/new?labels=enhancement&title=) | [🐛 Bug report](../../issues/new?labels=bug&title=) | [❓ Ask a question](../../issues/new?labels=question&title=)
-
 ---
 
 ## Table of Contents
@@ -35,7 +33,7 @@ This repository contains Infrastructure as Code (IaC) to deploy the full stack e
 
 ## Architecture Diagram
 
-![Architecture Diagram](./architecture/aws_production_web_app_architecture.png)
+![Architecture Diagram](./aws_production_web_app_architecture.png)
 
 ## Architecture Flow
 
