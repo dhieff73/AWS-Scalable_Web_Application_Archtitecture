@@ -12,12 +12,12 @@ This project deploys a resilient, scalable, and secure web application on AWS us
 
 ### Goals
 
-- ✅ High availability across two Availability Zones
-- ✅ Automatic scaling based on real-time demand
-- ✅ Defense in depth (WAF, Security Groups, NACLs, private subnets)
-- ✅ Zero public exposure for compute and database tiers
-- ✅ Full observability with dashboards, alarms, and notifications
-- ✅ Secure operational access without SSH/bastion hosts
+-  High availability across two Availability Zones
+-  Automatic scaling based on real-time demand
+-  Defense in depth (WAF, Security Groups, NACLs, private subnets)
+-  Zero public exposure for compute and database tiers
+-  Full observability with dashboards, alarms, and notifications
+-  Secure operational access without SSH/bastion hosts
 
 ---
 
@@ -67,7 +67,7 @@ Security Groups + NACLs (layered access control across every tier)
 
 ---
 
-## 🔐 Security Design
+##  Security Design
 
 - **No public compute or database access** — EC2 instances and RDS live exclusively in private subnets.
 - **Layered access control** — Security Groups (stateful, resource-level) combined with NACLs (stateless, subnet-level) enforce least-privilege traffic between every tier.
@@ -77,7 +77,7 @@ Security Groups + NACLs (layered access control across every tier)
 
 ---
 
-## 📈 Scalability & High Availability
+##  Scalability & High Availability
 
 - The **Auto Scaling Group** spans both Availability Zones and uses a **Launch Template** to guarantee consistent instance configuration.
 - **Target tracking scaling policies** automatically add or remove EC2 capacity based on metrics such as average CPU utilization or request count per target.
