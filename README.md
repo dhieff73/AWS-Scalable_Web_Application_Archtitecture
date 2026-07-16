@@ -1,12 +1,12 @@
-# 🚀 Scalable Web Application with ALB and Auto Scaling
+#  Scalable Web Application with ALB and Auto Scaling
 
 A production-grade, highly available web application architecture on AWS, built with EC2 instances behind an Application Load Balancer, Auto Scaling Group, and CloudFront — backed by a Multi-AZ RDS database.
 
-![Architecture Diagram](./architecture-diagram.png)
+![Architecture Diagram](./aws_production_web_app_architecture.png)
 
 ---
 
-## 📋 Overview
+##  Overview
 
 This project deploys a resilient, scalable, and secure web application on AWS using a classic EC2-based architecture. Traffic is accelerated and protected at the edge with **CloudFront** and **AWS WAF**, routed through an **Application Load Balancer**, and served by an **Auto Scaling Group** of EC2 instances spread across two Availability Zones. Data is persisted in a **Multi-AZ RDS** instance with automated failover, and the entire environment is monitored, secured, and managed without exposing any bastion hosts.
 
@@ -21,7 +21,7 @@ This project deploys a resilient, scalable, and secure web application on AWS us
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 **Request flow:**
 
@@ -95,7 +95,7 @@ Security Groups + NACLs (layered access control across every tier)
 
 ---
 
-## 🧰 Prerequisites
+##  Prerequisites
 
 - An AWS account with sufficient permissions to create VPCs, EC2, RDS, ALB, CloudFront, WAF, Route 53, and IAM resources
 - [AWS CLI](https://aws.amazon.com/cli/) configured with valid credentials
@@ -104,7 +104,7 @@ Security Groups + NACLs (layered access control across every tier)
 
 ---
 
-## ⚙️ Deployment Steps (High-Level)
+##  Deployment Steps (High-Level)
 
 1. **Networking** — Create the VPC with public and private subnets across two AZs; deploy NAT Gateways, an Internet Gateway, route tables, Security Groups, and NACLs.
 2. **Database** — Launch a Multi-AZ RDS instance (MySQL/PostgreSQL) inside the private DB subnets.
@@ -115,11 +115,11 @@ Security Groups + NACLs (layered access control across every tier)
 7. **Operations** — Enable Systems Manager on all EC2 instances (via IAM instance profile) for Session Manager access.
 8. **Monitoring** — Set up CloudWatch dashboards and alarms (CPU, target health, RDS failover, NAT throughput) and connect them to an SNS topic for alerting.
 
-> 💡 This repository can be extended with Terraform modules or CloudFormation templates under an `infra/` directory to fully automate the steps above.
+>  This repository can be extended with Terraform modules or CloudFormation templates under an `infra/` directory to fully automate the steps above.
 
 ---
 
-## 📁 Suggested Repository Structure
+##  Suggested Repository Structure
 
 ```
 .
@@ -138,7 +138,7 @@ Security Groups + NACLs (layered access control across every tier)
 
 ---
 
-## 🗺️ Key AWS Services Used
+##  Key AWS Services Used
 
 - **VPC** — Public & private subnets, NAT Gateway, Security Groups, NACLs
 - **EC2 + ASG** — Launch Template, target tracking scaling policies
@@ -151,12 +151,8 @@ Security Groups + NACLs (layered access control across every tier)
 
 ---
 
-## 📄 License
+##  License
 
 This project is provided as an architecture reference. Add your preferred license (e.g., MIT) here.
 
 ---
-
-## 🙋 Author
-
-Feel free to open an issue or submit a pull request if you'd like to contribute improvements to this architecture.
