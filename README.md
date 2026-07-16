@@ -23,7 +23,6 @@ This project deploys a resilient, scalable, and secure web application on AWS us
 
 ##  Architecture
 
-**Request flow:**
 ![Architecture Diagram](./aws_production_web_app_architecture.png)
 
 ### Components
