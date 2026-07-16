@@ -1,185 +1,162 @@
-# Scalable Web Application with ALB and Auto Scaling (EC2-Based)
+# 🚀 Scalable Web Application with ALB and Auto Scaling
 
-**Production-grade, highly available web application architecture on AWS** — built with a multi-AZ VPC, Application Load Balancer, EC2 Auto Scaling, CloudFront, WAF, and Multi-AZ RDS.
+A production-grade, highly available web application architecture on AWS, built with EC2 instances behind an Application Load Balancer, Auto Scaling Group, and CloudFront — backed by a Multi-AZ RDS database.
+
+![Architecture Diagram](./architecture-diagram.png)
 
 ---
 
-## Table of Contents
+## 📋 Overview
 
-- [Solution Overview](#solution-overview)
-- [Architecture Diagram](#architecture-diagram)
-- [Architecture Flow](#architecture-flow)
-- [AWS Services Used](#aws-services-used)
-- [Repository Structure](#repository-structure)
-- [Prerequisites](#prerequisites)
-- [Deployment](#deployment)
-  - [1. Clone the Repository](#1-clone-the-repository)
-  - [2. Configure Variables](#2-configure-variables)
-  - [3. Deploy the Infrastructure](#3-deploy-the-infrastructure)
-  - [4. Validate the Deployment](#4-validate-the-deployment)
-  - [5. Tear Down](#5-tear-down)
-- [Configuration Notes](#configuration-notes)
-- [Security](#security)
-- [Cost Considerations](#cost-considerations)
+This project deploys a resilient, scalable, and secure web application on AWS using a classic EC2-based architecture. Traffic is accelerated and protected at the edge with **CloudFront** and **AWS WAF**, routed through an **Application Load Balancer**, and served by an **Auto Scaling Group** of EC2 instances spread across two Availability Zones. Data is persisted in a **Multi-AZ RDS** instance with automated failover, and the entire environment is monitored, secured, and managed without exposing any bastion hosts.
+
+### Goals
+
+- ✅ High availability across two Availability Zones
+- ✅ Automatic scaling based on real-time demand
+- ✅ Defense in depth (WAF, Security Groups, NACLs, private subnets)
+- ✅ Zero public exposure for compute and database tiers
+- ✅ Full observability with dashboards, alarms, and notifications
+- ✅ Secure operational access without SSH/bastion hosts
+
 ---
 
-## Solution Overview
+## 🏗️ Architecture
 
-This project deploys a **production-grade, three-tier web application** on AWS using EC2 instances inside a properly segmented VPC. The architecture spans **two Availability Zones** for high availability and uses an **Application Load Balancer (ALB)** and **Auto Scaling Group (ASG)** to distribute traffic and scale compute capacity automatically in response to demand.
+**Request flow:**
 
-Static assets are cached at the edge with **Amazon CloudFront**, and the origin is protected by **AWS WAF** using managed rules aligned with the OWASP Top 10. The database tier runs on **Amazon RDS in a Multi-AZ configuration**, providing automated failover to a standby replica in a second AZ. All compute and database resources live in private subnets with no direct internet access — operators reach instances securely through **AWS Systems Manager Session Manager**, eliminating the need for a bastion host. **Amazon Route 53** provides DNS resolution and health checks, and **Amazon CloudWatch + SNS** provide monitoring, dashboards, and alerting across the stack.
+```
+User
+ │
+ ▼
+Route 53 (Alias record + health checks)
+ │
+ ▼
+CloudFront (caches static & dynamic content)  ──▶  AWS WAF (Layer 7 rules, OWASP Top 10)
+ │
+ ▼
+VPC
+ │
+ ▼
+Application Load Balancer (public subnets, both AZs)
+ │
+ ├──▶ Availability Zone A                    ├──▶ Availability Zone B
+ │     ├─ Public subnet   → NAT Gateway      │     ├─ Public subnet   → NAT Gateway
+ │     ├─ Private app subnet → ASG (EC2)     │     ├─ Private app subnet → ASG (EC2)
+ │     └─ Private DB subnet  → RDS Primary   │     └─ Private DB subnet  → RDS Standby (sync)
+ │
+ ▼
+CloudWatch + SNS (dashboards, alarms, alerts)
+Systems Manager (Session Manager — no bastion)
+Security Groups + NACLs (layered access control across every tier)
+```
 
-This repository contains Infrastructure as Code (IaC) to deploy the full stack end-to-end, along with the architecture diagram and supporting documentation.
+### Components
 
-## Architecture Diagram
+| Layer | Service | Purpose |
+|---|---|---|
+| DNS | **Route 53** | Alias record pointing to the ALB, with health checks for failover |
+| Edge / CDN | **CloudFront** | Caches static & dynamic content to reduce latency |
+| Edge Security | **AWS WAF** | Layer 7 protection against the OWASP Top 10 |
+| Networking | **VPC** | Public & private subnets across 2 AZs, NAT Gateways, Security Groups, NACLs |
+| Load Balancing | **Application Load Balancer** | Layer 7 routing across AZs |
+| Compute | **EC2 + Auto Scaling Group** | Launch Template–based instances with target tracking scaling policies |
+| Database | **RDS (Multi-AZ)** | MySQL/PostgreSQL with a primary + synced standby and automated failover |
+| Access | **Systems Manager (Session Manager)** | Secure shell access to instances without a bastion host or open SSH ports |
+| Observability | **CloudWatch + SNS** | Metrics, dashboards, alarms, and notifications |
 
-![Architecture Diagram](./aws_production_web_app_architecture.png)
+---
 
-## Architecture Flow
+## 🔐 Security Design
 
-1. **User → Route 53** — DNS resolves the domain via an alias record pointing at CloudFront/ALB, with health checks to detect unhealthy endpoints.
-2. **Route 53 → CloudFront + WAF** — Requests hit the CloudFront distribution, which caches static assets at edge locations and reduces latency. AWS WAF inspects requests against managed rule groups (OWASP Top 10) before they reach the origin.
-3. **CloudFront → Application Load Balancer** — The ALB, deployed across public subnets in two AZs, performs Layer 7 routing and distributes traffic to healthy targets.
-4. **ALB → Public Subnets (AZ-a / AZ-b)** — Each public subnet hosts an ALB node and a NAT Gateway, allowing outbound internet access for resources in the private subnets.
-5. **Public Subnets → Private App Subnets** — Traffic is forwarded to EC2 instances managed by an Auto Scaling Group, launched from a shared Launch Template, one ASG spanning both AZs for redundancy.
-6. **Private App Subnets → Private DB Subnets** — Application instances connect to an RDS primary instance in AZ-a, which synchronously replicates to a standby instance in AZ-b for automated failover.
-7. **Operational access** — AWS Systems Manager Session Manager provides shell access to EC2 instances without a bastion host or open SSH ports.
-8. **Observability** — Amazon CloudWatch collects metrics/logs and drives alarms; Amazon SNS delivers notifications to operators.
-9. **Security & scaling controls** — Security Groups and Network ACLs enforce layered access control between every tier, and target tracking / step scaling policies adjust ASG capacity automatically based on load.
+- **No public compute or database access** — EC2 instances and RDS live exclusively in private subnets.
+- **Layered access control** — Security Groups (stateful, resource-level) combined with NACLs (stateless, subnet-level) enforce least-privilege traffic between every tier.
+- **No bastion hosts** — all administrative access to EC2 instances goes through AWS Systems Manager Session Manager, removing the need for open inbound SSH.
+- **Edge protection** — AWS WAF filters malicious Layer 7 traffic (SQLi, XSS, etc.) before it ever reaches the ALB.
+- **Outbound internet access** for private instances (patching, package installs) is routed through NAT Gateways in each AZ, never inbound.
 
-## AWS Services Used
+---
 
-| Service | Role in this Architecture |
-|---|---|
-| **Amazon VPC** | Public & private subnets across 2 AZs, route tables, NAT Gateways, Security Groups, NACLs |
-| **Amazon EC2 + Auto Scaling** | Application compute via Launch Template; target tracking & step scaling policies |
-| **Elastic Load Balancing (ALB)** | Layer 7 routing, listener rules, target group health checks |
-| **AWS WAF** | Managed rule groups aligned with OWASP Top 10, attached to CloudFront |
-| **Amazon CloudFront** | Edge caching for static assets, latency reduction, HTTPS termination |
-| **Amazon RDS (Multi-AZ)** | MySQL/PostgreSQL primary + synchronous standby replica with automated failover |
-| **Amazon Route 53** | Alias record to CloudFront/ALB, DNS health checks |
-| **AWS Systems Manager** | Session Manager for bastion-free, auditable EC2 access |
-| **Amazon CloudWatch + SNS** | Dashboards, alarms, and operator notifications |
+## 📈 Scalability & High Availability
 
-## Repository Structure
+- The **Auto Scaling Group** spans both Availability Zones and uses a **Launch Template** to guarantee consistent instance configuration.
+- **Target tracking scaling policies** automatically add or remove EC2 capacity based on metrics such as average CPU utilization or request count per target.
+- The **Application Load Balancer** distributes incoming traffic evenly across healthy instances in both AZs.
+- **RDS Multi-AZ** maintains a synchronously replicated standby instance in the second AZ and performs automatic failover if the primary becomes unavailable.
+- **CloudFront** offloads repeated static/dynamic content requests from the origin, improving latency and reducing backend load.
+
+---
+
+## 📊 Monitoring & Alerting
+
+- **CloudWatch dashboards** provide visibility into ALB request metrics, ASG instance health/count, RDS performance, and NAT Gateway throughput.
+- **CloudWatch Alarms** trigger on thresholds such as high CPU, unhealthy target count, or database failover events.
+- **SNS topics** notify the operations team (via email/SMS/Slack integration) whenever an alarm fires.
+
+---
+
+## 🧰 Prerequisites
+
+- An AWS account with sufficient permissions to create VPCs, EC2, RDS, ALB, CloudFront, WAF, Route 53, and IAM resources
+- [AWS CLI](https://aws.amazon.com/cli/) configured with valid credentials
+- (Optional) [Terraform](https://www.terraform.io/) or AWS CloudFormation if deploying via Infrastructure as Code
+- A registered domain name in Route 53 (or a hosted zone you control) if using the Route 53 alias record
+
+---
+
+## ⚙️ Deployment Steps (High-Level)
+
+1. **Networking** — Create the VPC with public and private subnets across two AZs; deploy NAT Gateways, an Internet Gateway, route tables, Security Groups, and NACLs.
+2. **Database** — Launch a Multi-AZ RDS instance (MySQL/PostgreSQL) inside the private DB subnets.
+3. **Compute** — Create a Launch Template defining the EC2 AMI, instance type, IAM role (with SSM permissions), and user-data bootstrap script; deploy an Auto Scaling Group across the private app subnets.
+4. **Load Balancing** — Provision an Application Load Balancer in the public subnets, configure target groups and health checks, and attach the ASG.
+5. **Edge & Security** — Attach an AWS WAF Web ACL (OWASP Top 10 managed rule sets) to the ALB or CloudFront distribution; create a CloudFront distribution pointing to the ALB as its origin.
+6. **DNS** — Create a Route 53 Alias record pointing to the CloudFront distribution (or ALB), with health checks enabled.
+7. **Operations** — Enable Systems Manager on all EC2 instances (via IAM instance profile) for Session Manager access.
+8. **Monitoring** — Set up CloudWatch dashboards and alarms (CPU, target health, RDS failover, NAT throughput) and connect them to an SNS topic for alerting.
+
+> 💡 This repository can be extended with Terraform modules or CloudFormation templates under an `infra/` directory to fully automate the steps above.
+
+---
+
+## 📁 Suggested Repository Structure
 
 ```
 .
-├── architecture/
-│   └── aws_production_web_app_architecture.png   # Architecture diagram
-├── infrastructure/
-│   ├── vpc/                 # VPC, subnets, route tables, NAT Gateways
-│   ├── security/            # Security Groups, NACLs, WAF rules
-│   ├── compute/             # Launch Template, Auto Scaling Group, scaling policies
-│   ├── load-balancing/      # ALB, listeners, target groups
-│   ├── cdn/                 # CloudFront distribution
-│   ├── database/            # RDS Multi-AZ instance, subnet groups, parameter groups
-│   ├── dns/                 # Route 53 hosted zone, alias records, health checks
-│   └── monitoring/          # CloudWatch dashboards, alarms, SNS topics
-├── scripts/
-│   └── deploy.sh            # Convenience deployment script
-├── docs/
-│   └── runbook.md           # Operational runbook (failover, scaling, patching)
-└── README.md
+├── README.md
+├── architecture-diagram.png
+├── infra/                  # Terraform / CloudFormation IaC (optional)
+│   ├── vpc/
+│   ├── ec2-asg/
+│   ├── alb-waf/
+│   ├── rds/
+│   ├── cloudfront/
+│   └── route53/
+├── scripts/                 # User-data / bootstrap scripts for EC2
+└── docs/                     # Additional architecture notes, runbooks
 ```
 
-> Adjust this tree to match your actual IaC tool (Terraform modules, AWS CDK stacks, or CloudFormation templates).
+---
 
-## Prerequisites
+## 🗺️ Key AWS Services Used
 
-- An AWS account with permissions to create VPC, EC2, ELB, RDS, CloudFront, WAF, Route 53, IAM, Systems Manager, and CloudWatch resources
-- [AWS CLI](https://aws.amazon.com/cli/) v2, configured with a named profile
-- Infrastructure as Code tooling of your choice:
-  - [Terraform](https://developer.hashicorp.com/terraform) ≥ 1.5, **or**
-  - [AWS CDK](https://aws.amazon.com/cdk/) with Node.js 20.x, **or**
-  - AWS CloudFormation templates (no additional tooling required)
-- A registered domain (or existing Route 53 hosted zone) if you want to use custom DNS
-- An ACM certificate in `us-east-1` if attaching HTTPS to CloudFront
+- **VPC** — Public & private subnets, NAT Gateway, Security Groups, NACLs
+- **EC2 + ASG** — Launch Template, target tracking scaling policies
+- **ALB + WAF** — Layer 7 routing, WAF rules for OWASP Top 10
+- **CloudFront** — Static/dynamic content caching, reduced latency
+- **RDS Multi-AZ** — MySQL/PostgreSQL with automated failover
+- **Route 53** — Alias record to ALB/CloudFront, health checks
+- **Systems Manager** — Session Manager for secure, bastion-free instance access
+- **CloudWatch + SNS** — Dashboards, alarms, and notifications
 
-## Deployment
+---
 
-### 1. Clone the Repository
+## 📄 License
 
-```bash
-git clone https://github.com/<your-username>/scalable-web-app-alb-asg.git
-cd scalable-web-app-alb-asg
-export MAIN_DIRECTORY=$PWD
-```
+This project is provided as an architecture reference. Add your preferred license (e.g., MIT) here.
 
-### 2. Configure Variables
+---
 
-Copy the example variables file and set values for your environment (VPC CIDR, instance type, database engine/size, domain name, alert email, etc.):
+## 🙋 Author
 
-```bash
-cp infrastructure/terraform.tfvars.example infrastructure/terraform.tfvars
-```
-
-Key variables to review:
-
-| Variable | Description | Example |
-|---|---|---|
-| `vpc_cidr` | CIDR block for the VPC | `10.0.0.0/16` |
-| `availability_zones` | Two AZs to deploy across | `["us-east-1a", "us-east-1b"]` |
-| `instance_type` | EC2 instance type for the ASG | `t3.medium` |
-| `asg_min` / `asg_max` / `asg_desired` | Auto Scaling capacity bounds | `2 / 6 / 2` |
-| `db_engine` | RDS engine | `postgres` or `mysql` |
-| `db_instance_class` | RDS instance size | `db.t3.medium` |
-| `domain_name` | Domain served via Route 53/CloudFront | `app.example.com` |
-| `alert_email` | SNS subscription for CloudWatch alarms | `ops@example.com` |
-
-### 3. Deploy the Infrastructure
-
-```bash
-cd $MAIN_DIRECTORY/infrastructure
-terraform init
-terraform plan -var-file=terraform.tfvars
-terraform apply -var-file=terraform.tfvars
-```
-
-> If using AWS CDK or CloudFormation instead, replace this step with `cdk deploy` or `aws cloudformation deploy` against the templates in `infrastructure/`.
-
-### 4. Validate the Deployment
-
-- Confirm the ALB target group shows all targets as `healthy`.
-- Confirm the RDS instance shows a Multi-AZ standby in a second AZ.
-- Visit the CloudFront/Route 53 domain and confirm the application loads.
-- Confirm CloudWatch alarms and the SNS subscription are active.
-- Connect to an instance via Systems Manager to confirm bastion-free access:
-
-```bash
-aws ssm start-session --target <instance-id> --profile <PROFILE_NAME>
-```
-
-### 5. Tear Down
-
-```bash
-cd $MAIN_DIRECTORY/infrastructure
-terraform destroy -var-file=terraform.tfvars
-```
-
-> Remember to empty/delete any S3 buckets used for CloudFront logs or ALB access logs before destroying, as non-empty buckets can block teardown.
-
-## Configuration Notes
-
-- **Subnet layout**: Each AZ has one public subnet (ALB node + NAT Gateway), one private app subnet (ASG/EC2), and one private DB subnet (RDS).
-- **Scaling policies**: Target tracking (e.g., average CPU utilization) is the default; step scaling can be layered on for faster response to traffic spikes.
-- **Failover**: RDS Multi-AZ failover is automatic and transparent to the application via the RDS endpoint — no application-level changes are needed during failover.
-- **Access model**: There is intentionally no bastion host or public SSH access; all administrative access goes through Systems Manager Session Manager, which is logged and IAM-controlled.
-- **Edge security**: WAF rules should be evaluated in "count" mode first in non-production environments before switching to "block" mode.
-
-## Security
-
-- No inbound SSH/RDP is opened to the internet; all instances sit in private subnets.
-- Security Groups follow least-privilege, tier-to-tier rules (ALB → App, App → DB only).
-- NACLs provide a secondary layer of subnet-level access control.
-- WAF managed rule groups mitigate common web exploits (OWASP Top 10).
-- Systems Manager Session Manager provides auditable, IAM-authenticated shell access without exposing SSH.
-- Secrets (DB credentials) should be stored in AWS Secrets Manager or SSM Parameter Store rather than hardcoded in IaC variables.
-
-If you discover a security issue with this repository, please open an issue or, for sensitive reports, follow the process in `SECURITY.md`.
-
-## Cost Considerations
-
-This architecture provisions billable resources, including but not limited to: NAT Gateways (per-AZ), EC2 instances, an Application Load Balancer, RDS Multi-AZ (double the single-instance cost), and CloudFront data transfer. Review the [AWS Pricing Calculator](https://calculator.aws/) before deploying to production, and remember to tear down resources after testing to avoid ongoing charges.
-
-
+Feel free to open an issue or submit a pull request if you'd like to contribute improvements to this architecture.
