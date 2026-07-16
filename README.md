@@ -87,7 +87,7 @@ Security Groups + NACLs (layered access control across every tier)
 
 ---
 
-## 📊 Monitoring & Alerting
+##  Monitoring & Alerting
 
 - **CloudWatch dashboards** provide visibility into ALB request metrics, ASG instance health/count, RDS performance, and NAT Gateway throughput.
 - **CloudWatch Alarms** trigger on thresholds such as high CPU, unhealthy target count, or database failover events.
