@@ -93,24 +93,6 @@ This project deploys a resilient, scalable, and secure web application on AWS us
 
 ---
 
-##  Suggested Repository Structure
-
-```
-.
-├── README.md
-├── architecture-diagram.png
-├── infra/                  # Terraform / CloudFormation IaC (optional)
-│   ├── vpc/
-│   ├── ec2-asg/
-│   ├── alb-waf/
-│   ├── rds/
-│   ├── cloudfront/
-│   └── route53/
-├── scripts/                 # User-data / bootstrap scripts for EC2
-└── docs/                     # Additional architecture notes, runbooks
-```
-
----
 
 ##  Key AWS Services Used
 
@@ -122,11 +104,5 @@ This project deploys a resilient, scalable, and secure web application on AWS us
 - **Route 53** — Alias record to ALB/CloudFront, health checks
 - **Systems Manager** — Session Manager for secure, bastion-free instance access
 - **CloudWatch + SNS** — Dashboards, alarms, and notifications
-
----
-
-##  License
-
-This project is provided as an architecture reference. Add your preferred license (e.g., MIT) here.
 
 ---
