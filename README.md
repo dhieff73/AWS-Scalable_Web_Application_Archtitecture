@@ -2,7 +2,7 @@
 
 A production-grade, highly available web application architecture on AWS, built with EC2 instances behind an Application Load Balancer, Auto Scaling Group, and CloudFront — backed by a Multi-AZ RDS database.
 
-![Architecture Diagram](./aws_production_web_app_architecture.png)
+
 
 ---
 
@@ -24,32 +24,7 @@ This project deploys a resilient, scalable, and secure web application on AWS us
 ##  Architecture
 
 **Request flow:**
-
-```
-User
- │
- ▼
-Route 53 (Alias record + health checks)
- │
- ▼
-CloudFront (caches static & dynamic content)  ──▶  AWS WAF (Layer 7 rules, OWASP Top 10)
- │
- ▼
-VPC
- │
- ▼
-Application Load Balancer (public subnets, both AZs)
- │
- ├──▶ Availability Zone A                    ├──▶ Availability Zone B
- │     ├─ Public subnet   → NAT Gateway      │     ├─ Public subnet   → NAT Gateway
- │     ├─ Private app subnet → ASG (EC2)     │     ├─ Private app subnet → ASG (EC2)
- │     └─ Private DB subnet  → RDS Primary   │     └─ Private DB subnet  → RDS Standby (sync)
- │
- ▼
-CloudWatch + SNS (dashboards, alarms, alerts)
-Systems Manager (Session Manager — no bastion)
-Security Groups + NACLs (layered access control across every tier)
-```
+![Architecture Diagram](./aws_production_web_app_architecture.png)
 
 ### Components
 
